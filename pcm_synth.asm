@@ -8,8 +8,17 @@
 
    jmp start
 
+   ; controls:
+   ; exit "Q"
+   ; play beep "A"
 start:
-   ; very basic audio "hello world"
+   jsr GETIN      ; get charakter from keyboard
+   cmp #81        ; exit if pressing "Q"
+   beq done
+   cmp #65        ; play note if pressing "A"
+   bne start
+
+   ; prepare playback
    lda #$8F       ; reset PCM buffer, 8 bit mono, max volume
    sta VERA_audio_ctrl
 
@@ -24,9 +33,11 @@ loop:
    and #$80
    beq loop
 
-playback:
+playback:         ; start playback
    lda #128
    sta VERA_audio_rate
+
+   jmp start
 
 done:
    rts            ; return to BASIC
