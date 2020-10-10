@@ -8,8 +8,6 @@
 
    jmp start
 
-sample: .byte $00
-
 start:
    ; very basic audio "hello world"
    lda #$8F       ; reset PCM buffer, 8 bit mono, max volume
@@ -17,11 +15,10 @@ start:
 
    lda #0         ; set playback rate to zero
    sta VERA_audio_rate
+   tax            ; initial audio sample
 
 loop:
-   ldx sample     ; load previous sample
    inx
-   stx sample     ; store back previous sample
    stx VERA_audio_data     ; and append it to the buffer
    lda VERA_audio_ctrl     ; check if buffer is full
    and #$80
