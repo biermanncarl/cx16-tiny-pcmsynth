@@ -1,0 +1,5 @@
+cd ".."
+mkdir build
+cd build
+cl65 -t cx16 -o PCMSYNTH.PRG "../source/pcm_synth.asm"
+cd ../source
