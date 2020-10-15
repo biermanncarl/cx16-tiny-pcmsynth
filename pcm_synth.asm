@@ -2,14 +2,6 @@
 
 
 .zeropage
-   ; Addresses
-TableAddressPositive:   
-   ; VolumeSublevelTablePositive
-   .word 0
-TableAddressNegative:
-   ; VolumeSublevelTableNegative
-   .word 0
-
    ; DSP variables on ZP for moar shpeeed
 LastSample:
    .byte $00
@@ -22,6 +14,8 @@ VolumePowerTwo:      ; how many RSHIFTs should be applied (0-8)
 VolumeSubLevel:      ; upscaling to which sublevel (0 to 4)  (that is: 0,2,4,6 or 8)
    .byte $00
 
+MIN_VOLUME = 5
+
 .org $080D
 .segment "STARTUP"
 .segment "INIT"
@@ -32,12 +26,8 @@ VolumeSubLevel:      ; upscaling to which sublevel (0 to 4)  (that is: 0,2,4,6 o
 
    ; controls:
    ; exit "Q"
-   ; play beep "A"
-
-   ; TODOs
-   ; learn how to use AFLOW interrupt to facilitate continuous playback
-   ; make playback timed
-   ; reduce latency
+   ; make sound quieter "A"
+   ; make sound louder "S"
 
    ; addresses
 DefaultInterruptHandler:
@@ -79,13 +69,14 @@ MyInterruptHandler:
 @loop:
    phy
    inx
-   txa ; now get ready for scaling
+   stx CurrentSample
    jsr ApplyVolume ; doesn't change x
    sta VERA_audio_data     ; and append it to the buffer
    ; continue until buffer is full
    ;lda VERA_audio_ctrl     ; check if buffer is full
    ;and #$80
-   ; nah, continue until counter says it's enough
+   ;beq @loop
+   ; continue until counter says it's enough
    ply
    dey
    bne @loop
@@ -102,11 +93,13 @@ MyInterruptHandler:
 
 
 
-   ; takes a sample and applies volume scaling
+   ; takes a sample in a and applies volume scaling
+   ; returns scaled sample in a
+   ; preserves register x
    ; volume scaling can be performed with negative powers of 2
    ; and 4 sublevels between two integer powers of 2
 ApplyVolume:
-   ; lda CurrentSample
+   lda CurrentSample
    bmi AV_negative        ; branch if sample is negative
    ; positive sample
    ; perform RSHIFTs
@@ -117,9 +110,17 @@ ApplyVolume:
    dey
    bne @loop1           ; max 55 cycles + 12 cycles = 67 cycles
 @continue1:
+   sta CurrentSample
    ; call sublevel scaling
-   ; TODO
-   ; ldx VolumeSubLevel
+   ; copy the correct address to indirect jump location
+   ldy VolumeSubLevel
+   lda VolumeSublevelTablePositive,Y
+   sta JumpAddress
+   iny
+   lda VolumeSublevelTablePositive,Y
+   sta JumpAddress+1
+   lda CurrentSample
+   jmp (JumpAddress)
 VolumeReturnPositive:
    ; sta CurrentSample
    rts ; return in a
@@ -135,7 +136,17 @@ AV_negative:
    dey
    bne @loop2
 @continue2:             ; max 71 cycles + 13 cycles = 84 cycles
-   ; TODO: call sublevel scaling
+   ; call sublevel scaling
+   ; copy the correct address to indirect jump location
+   sta CurrentSample
+   ldy VolumeSubLevel
+   lda VolumeSublevelTableNegative,Y
+   sta JumpAddress
+   iny
+   lda VolumeSublevelTableNegative,Y
+   sta JumpAddress+1
+   lda CurrentSample
+   jmp (JumpAddress)
 VolumeReturnNegative:
    ; sta CurrentSample 
    rts ; return in a
@@ -173,11 +184,11 @@ VHPos3:
 VHPos4:
    sta CurrentSample
    lsr
-   tax
+   tay
    clc
    adc CurrentSample
    sta CurrentSample
-   txa
+   tya
    lsr
    clc
    adc CurrentSample
@@ -220,11 +231,11 @@ VHNeg4:
    sta CurrentSample
    sec
    ror
-   tax
+   tay
    clc
    adc CurrentSample
    sta CurrentSample
-   txa
+   tya
    sec
    ror
    clc
@@ -249,6 +260,8 @@ start:
    ; set volume to max
    lda #0
    sta VolumePowerTwo
+   lda #0
+   sta VolumeSubLevel
 
    ; copy address of default interrupt handler
    lda IRQVec
@@ -297,18 +310,43 @@ mainloop:
    jsr GETIN      ; get charakter from keyboard
    cmp #81        ; exit if pressing "Q"
    beq done
-   cmp #65        ; check if pressed "A"
+   cmp #65        ; check if pressed "A": decrease Volume
    bne @continue1
+   ldx VolumeSubLevel
+   dex
+   dex
+   stx VolumeSubLevel
+   bpl @continue2  ; in case VolumeSubLevel was still 0 or higher, skip ahead
+   lda #8
+   sta VolumeSubLevel
    inc VolumePowerTwo ; more quiet
+   lda VolumePowerTwo
+   cmp #MIN_VOLUME+1          ; check if minimum Volume reached
+   bne @continue1
+   lda #MIN_VOLUME
+   sta VolumePowerTwo
+   lda #0
+   sta VolumeSubLevel
    jmp @continue2
 @continue1:
-   cmp #66
+   cmp #83        ; check if pressed "S": increase Volume
    bne @continue2
+   lda VolumePowerTwo
+   beq @continue2    ; skip ahead if maximum volume has been reached
+   ldx VolumeSubLevel
+   inx
+   inx
+   stx VolumeSubLevel
+   txa
+   cmp #10
+   bne @continue2 ; in case VolumeSubLevel has not been increased to 10, skip ahead
+   lda #0
+   sta VolumeSubLevel
    dec VolumePowerTwo
 
 @continue2:
-   lda LastSample
-   jsr CHROUT
+   ;lda LastSample
+   ;jsr CHROUT
 
    jmp mainloop
 
