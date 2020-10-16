@@ -1,7 +1,12 @@
 .include "x16.inc"
+.include "sine_8_8.inc"
 
 .zeropage
    ; DSP variables on ZP for moar shpeeed
+my_zp_ptr:
+   .word 0
+LastSample:
+   .byte 0
 
 .org $080D
 .segment "STARTUP"
@@ -21,7 +26,7 @@ DefaultInterruptHandler:
    .word $0000
 
 message:
-   .byte "press a to decrease volume, s to increase volume, q to quit"
+   .byte "press q to quit"
 end_message:
 
 
@@ -40,8 +45,7 @@ MyInterruptHandler:
 @loop:
    phy
    inx
-   stx CurrentSample
-   jsr ApplyVolume ; doesn't change x
+   lda full_sine_8_8, x
    sta VERA_audio_data     ; and append it to the buffer
    ; continue until buffer is full
    ;lda VERA_audio_ctrl     ; check if buffer is full
@@ -81,12 +85,6 @@ start:
    lda #$0D ; newline
    jsr CHROUT
 
-
-   ; set volume to max
-   lda #0
-   sta VolumePowerTwo
-   lda #0
-   sta VolumeSubLevel
 
    ; copy address of default interrupt handler
    lda IRQVec
@@ -135,41 +133,11 @@ mainloop:
    jsr GETIN      ; get charakter from keyboard
    cmp #81        ; exit if pressing "Q"
    beq done
-   cmp #65        ; check if pressed "A": decrease Volume
-   bne @continue1
-   ldx VolumeSubLevel
-   dex
-   dex
-   stx VolumeSubLevel
-   bpl @continue2  ; in case VolumeSubLevel was still 0 or higher, skip ahead
-   lda #8
-   sta VolumeSubLevel
-   inc VolumePowerTwo ; more quiet
-   lda VolumePowerTwo
-   cmp #MIN_VOLUME+1          ; check if minimum Volume reached
-   bne @continue1
-   lda #MIN_VOLUME
-   sta VolumePowerTwo
-   lda #0
-   sta VolumeSubLevel
-   jmp @continue2
-@continue1:
-   cmp #83        ; check if pressed "S": increase Volume
-   bne @continue2
-   lda VolumePowerTwo
-   beq @continue2    ; skip ahead if maximum volume has been reached
-   ldx VolumeSubLevel
-   inx
-   inx
-   stx VolumeSubLevel
-   txa
-   cmp #10
-   bne @continue2 ; in case VolumeSubLevel has not been increased to 10, skip ahead
-   lda #0
-   sta VolumeSubLevel
-   dec VolumePowerTwo
+   ; cmp #65        ; check if pressed "A": decrease Volume
+   ; bne @continue1
 
-@continue2:
+
+@continue1:
    ;lda LastSample
    ;jsr CHROUT
 

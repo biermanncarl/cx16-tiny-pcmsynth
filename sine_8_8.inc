@@ -1,4 +1,4 @@
-.rodata
+.segment "RODATA"
 
 full_sine_8_8:
     .byte 0
