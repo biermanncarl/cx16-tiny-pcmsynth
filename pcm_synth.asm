@@ -1,3 +1,64 @@
+; PCM Sawtooth With Volume Control Demo
+; -------------------------------------
+;
+; This program plays back a sawtooth waveform which can be controlled via the
+; keyboard. Press "A" for decreasing volume, "S" for increasing volume and "Q"
+; to quit.
+; The main program sets up a custom interrupt handler that handles the AFLOW
+; interrupt and passes on to the default interrupt handler.
+; The main program also checks the keyboard input and performs actions
+; accordingly, mainly increase and decrease of volume.
+; The interrupt handler creates a sawtooth waveform by continuusly increasing
+; a byte in each cycle. This byte is then used as input for a volume scaling
+; algorithm.
+; Since the 6502 has no intrinsic multiplication algorithm, multiplication is
+; always computationally expensive, especially for two's complement numbers,
+; in this demo, there is an alternative approach to do volume scaling, which
+; tries to be computationally more feasible than the general two's complement
+; multiplication approach.
+;
+; The volume scaling is performed in two steps.
+; The first step scales the signal down by a negative power of two. This is
+; achieved by simply right shifting the signal.
+; The second step scales the signal up to one of five logarithmically spaced
+; sub-levels.
+; The result is a nearly seamless volume scaling, except for the artifacts
+; resulting from the 8-bit precision.
+;
+; This sub-level method in details:
+; By simple right-shifting, we can approximate the multiplication of the signal
+; with negative powers of two.
+; The goal of the sub-level method is to fill in this relatively coarse set of
+; possible volumes. It adds four sub-level between each pair of powers of two.
+; The idea is as follows. We approximate the following numbers
+; 2^0     = 1.00          = 1.000(binary)
+; 2^(1/5) = 1.15 ~= 1.125 = 1.001(binary)
+; 2^(2/5) = 1.32 ~= 1.25  = 1.010(binary)
+; 2^(3/5) = 1.52 ~= 1.5   = 1.100(binary)
+; 2^(4/5) = 1.74 ~= 1.75  = 1.110(binary)
+; Since multiplication with one of these numbers is easy, we can select one of
+; these sub-levels and perform a hard-coded multiplication with one of these
+; binary approximations of powers of 2^(1/5).
+;
+; In order to understand how this multiplication works, consider the case of
+; multiplication with 2^(1/5) ~= 1.125.
+; First, we take the original sample, and make a copy of it, to use it later.
+; This is the 1.000(binary) part.
+; Then we shift the sample right three times, to get the 0.001(binary) part.
+; Eventually, we add this right-shifted value to the original value, and get
+; the original sample multiplied by 1.001(binary).
+;
+; With this method, the X16 is still running at very high CPU loads for 48 kHz
+; 8-bit audio output. One could decrease the sample rate to regain some CPU
+; cycles to do other stuff, for example waveform generation or sample playback.
+; One could also simplify this algorithm and strip off the sub-level scaling
+; if it is not needed. This would render even more CPU cycles available for
+; other stuff.
+
+
+; TODO: actually look at Booth's algorithm and try to implement it.
+
+
 .include "x16.inc"
 
 
@@ -13,6 +74,8 @@ VolumePowerTwo:      ; how many RSHIFTs should be applied (0-8)
    .byte $00
 VolumeSubLevel:      ; upscaling to which sublevel (0 to 4)  (that is: 0,2,4,6 or 8)
    .byte $00
+my_zp_ptr:
+   .word 0
 
 MIN_VOLUME = 5
 
@@ -50,8 +113,9 @@ VolumeSublevelTableNegative:
    .word VHNeg3
    .word VHNeg4
 
-
-
+message:
+   .byte "press a to decrease volume, s to increase volume, q to quit"
+end_message:
 
 
    ; handles the sound generation
@@ -93,7 +157,7 @@ MyInterruptHandler:
 
 
 
-   ; takes a sample in a and applies volume scaling
+   ; takes a sample and applies volume scaling
    ; returns scaled sample in a
    ; preserves register x
    ; volume scaling can be performed with negative powers of 2
@@ -154,6 +218,7 @@ VolumeReturnNegative:
 
 
    ; create volume sublevels. expects sample in accumulator
+   ; these are the hard-coded multiplications with powers of 2^(1/5)
 VHPos0:
    jmp VolumeReturnPositive ; 5 cycles
 
@@ -256,6 +321,24 @@ VHNeg4:
 
 start:
    ; startup code
+   ; print message
+   lda #<message
+   sta my_zp_ptr
+   lda #>message
+   sta my_zp_ptr+1
+   ldy #0
+@loop_msg:
+   cpy #(end_message-message)
+   beq @done_msg
+   lda (my_zp_ptr),y
+   jsr CHROUT
+   iny
+   bra @loop_msg
+@done_msg:
+   ; print newline
+   lda #$0D ; newline
+   jsr CHROUT
+
 
    ; set volume to max
    lda #0
@@ -374,5 +457,3 @@ done:
    sta VERA_ien
 
    rts            ; return to BASIC
-   ; NOTE: the binary program will be destroyed once returned to BASIC
-   ; and needs to be loaded again in order to run properly.
