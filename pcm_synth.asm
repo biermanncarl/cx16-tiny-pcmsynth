@@ -7,6 +7,10 @@ my_zp_ptr:
    .word 0
 csample:
    .byte 0     ; current sample
+dly_sample:
+   .byte 0     ; delay sample
+dly_ptr:
+   .word 0
 freq1:
    .word 0
 phase1:
@@ -47,7 +51,11 @@ Frequency:
 OFFSET = 0
 
    ; oscillator 2 detuning
-DETUNING = 3
+DETUNING = 4
+
+   ; delay memory locations
+DLY_BUFFER_START = $0E00
+DLY_BUFFER_END   = $8DFF   ; that's 32 kB ... yessss! :-D
 
 
    ; handles the sound generation
@@ -55,17 +63,21 @@ My_isr:
    ; first check if interrupt is an AFLOW interrupt
    lda VERA_isr
    and #$08
-   beq @continue
+   bne @do_fillup
+   jmp @end_aflow
 
+@do_fillup:
    ; fill up FIFO buffer with 256 samples (not until full) -- this improves latency
    ; (the remaining latency might be due to the emulator itself)
+   ; register y serves both as counter in the current 256 sample frame
+   ; and as offset in the delay buffer.
    lda #0
-   tax
+   tay
 @loop:
 
    ; Oscillator 1 (1/2 volume)
-   ldy phase1+1
-   lda full_sine_8_8, y
+   ldx phase1+1
+   lda full_sine_8_8, x
    bmi @osc1_minus
    lsr
    jmp @osc1_continue
@@ -83,11 +95,12 @@ My_isr:
    lda freq1+1
    adc phase1+1
    sta phase1+1
+   ; Oscillator 1: roughly 40 cycles
 
 
    ; Oscillator 2 (1/4 volume)
-   ldy phase2+1
-   lda full_sine_8_8, y
+   ldx phase2+1
+   lda full_sine_8_8, x
    bmi @osc2_minus
    lsr
    lsr
@@ -110,17 +123,47 @@ My_isr:
    lda freq2+1
    adc phase2+1
    sta phase2+1
+   ; Oscillator 2: roughly 44 cycles
 
-
-   lda csample
-   sta VERA_audio_data     ; and append it to the buffer
+   ; delay effect
+   ; first, read sample and mix it with current signal
+   ; then feed it back into the buffer
+   ; the feedback signal is reduced by factor 1/4 (-6dB) before mixing with oscillator signal
+   lda (dly_ptr),y
+   bmi @dly_minus
+   lsr
+   lsr
+   jmp @dly_continue
+@dly_minus:
+   sec
+   ror
+   sec
+   ror
+@dly_continue:
+   clc
+   adc csample
+   ; sample is done, store it in feedback buffer
+   sta (dly_ptr),y  
+   ; and to the FIFO buffer
+   sta VERA_audio_data
 
 
    ; continue until counter says it's enough
-   dex
+   iny
    bne @loop
 
-@continue:
+   ; advance the delay buffer
+   ldx dly_ptr+1
+   cpx #>DLY_BUFFER_END
+   bne @dly_advance
+   ; rewind
+   lda #>DLY_BUFFER_START
+   sta dly_ptr+1
+   jmp @end_aflow
+@dly_advance:
+   inc dly_ptr+1
+
+@end_aflow:
    ; call default interrupt handler
    ; for keyboard service
    jmp (Default_isr)
@@ -145,16 +188,18 @@ start:
    bra @loop_msg
 @done_msg:
 
-   ; Set Oscillator 1 frequency
+   ; Mute Oscillators 1 and 2
    lda #0
    sta freq1+1
-   lda #0
    sta freq1
-   ; Set Oscillator 2 frequency
-   lda #0
    sta freq2+1
-   lda #0
    sta freq2
+
+   ; Initialize delay
+   lda #<DLY_BUFFER_START
+   sta dly_ptr
+   lda #>DLY_BUFFER_END
+   sta dly_ptr+1
 
    ; copy address of default interrupt handler
    lda IRQVec
