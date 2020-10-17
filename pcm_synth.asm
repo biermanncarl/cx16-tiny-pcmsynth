@@ -1,12 +1,21 @@
 .include "x16.inc"
-.include "sine_8_8.inc"
+
 
 .zeropage
    ; DSP variables on ZP for moar shpeeed
 my_zp_ptr:
    .word 0
-LastSample:
-   .byte 0
+csample:
+   .byte 0     ; current sample
+freq1:
+   .word 0
+phase1:
+   .word 0
+freq2:
+   .word 0
+phase2:
+   .word 0
+
 
 .org $080D
 .segment "STARTUP"
@@ -18,8 +27,6 @@ LastSample:
 
    ; controls:
    ; exit "Q"
-   ; make sound quieter "A"
-   ; make sound louder "S"
 
    ; addresses
 DefaultInterruptHandler:
@@ -39,24 +46,77 @@ MyInterruptHandler:
 
    ; fill up FIFO buffer with 256 samples (not until full) -- this improves latency
    ; (the remaining latency might be due to the emulator itself)
-   ldx LastSample
    lda #0
-   tay
+   tax
 @loop:
-   phy
-   inx
-   lda full_sine_8_8, x
+
+   ; Oscillator 1 (1/2 volume)
+   ldy phase1+1
+   lda full_sine_8_8, y
+   bmi @osc1_minus
+   lsr
+   jmp @osc1_continue
+@osc1_minus:
+   sec
+   ror
+@osc1_continue:
+   sta csample
+   ; advance phase
+   ; LSB first, then MSB
+   lda freq1
+   clc
+   adc phase1
+   sta phase1
+   lda freq1+1
+   adc phase1+1
+   sta phase1+1
+
+
+   ; Oscillator 2 (1/4 volume)
+   ldy phase2+1
+   lda full_sine_8_8, y
+   bmi @osc2_minus
+   lsr
+   lsr
+   jmp @osc2_continue
+@osc2_minus:
+   sec
+   ror
+   sec
+   ror
+@osc2_continue:
+   clc
+   adc csample
+   sta csample
+   ; advance phase
+   ; LSB first, then MSB
+   lda freq2
+   clc
+   adc phase2
+   sta phase2
+   lda freq2+1
+   adc phase2+1
+   sta phase2+1
+
+
+   lda csample
    sta VERA_audio_data     ; and append it to the buffer
+
+
+
+
+
+
+
+
    ; continue until buffer is full
    ;lda VERA_audio_ctrl     ; check if buffer is full
    ;and #$80
    ;beq @loop
    ; continue until counter says it's enough
-   ply
-   dey
+   dex
    bne @loop
 
-   stx LastSample
 @continue:
    ; call default interrupt handler
    ; for keyboard service
@@ -85,6 +145,16 @@ start:
    lda #$0D ; newline
    jsr CHROUT
 
+   ; Set Oscillator 1 frequency
+   lda #1
+   sta freq1+1
+   lda #128
+   sta freq1
+   ; Set Oscillator 2 frequency
+   lda #1
+   sta freq2+1
+   lda #125
+   sta freq2
 
    ; copy address of default interrupt handler
    lda IRQVec
@@ -115,7 +185,6 @@ start:
    lda VERA_audio_ctrl     ; check if buffer is full
    and #$80
    beq @loop
-   stx LastSample
 
    ; start playback
    lda #128
@@ -167,3 +236,6 @@ done:
    sta VERA_ien
 
    rts            ; return to BASIC
+
+
+.include "sine_8_8.inc"
