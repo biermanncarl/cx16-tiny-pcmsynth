@@ -25,20 +25,33 @@ phase2:
 
    jmp start
 
-   ; controls:
-   ; exit "Q"
-
-   ; addresses
-DefaultInterruptHandler:
+Default_isr:
    .word $0000
 
 message:
-   .byte "use keyboard (a,w,s,...) to play, press q to quit"
+   .byte $0D, "controls", $0D
+   .byte "--------", $0D, $0D
+   .byte "a,w,s,...   play notes", $0D
+   .byte "z,x         toggle octaves", $0D
+   .byte "space       stop note", $0D
+   .byte "q           quit", $0D
 end_message:
+
+   ; keyboard values
+Octave:
+   .byte 60
+Note:
+   .byte 0
+Frequency:
+   .word 0
+OFFSET = 0
+
+   ; oscillator 2 detuning
+DETUNING = 3
 
 
    ; handles the sound generation
-MyInterruptHandler:
+My_isr:
    ; first check if interrupt is an AFLOW interrupt
    lda VERA_isr
    and #$08
@@ -103,16 +116,6 @@ MyInterruptHandler:
    sta VERA_audio_data     ; and append it to the buffer
 
 
-
-
-
-
-
-
-   ; continue until buffer is full
-   ;lda VERA_audio_ctrl     ; check if buffer is full
-   ;and #$80
-   ;beq @loop
    ; continue until counter says it's enough
    dex
    bne @loop
@@ -120,7 +123,7 @@ MyInterruptHandler:
 @continue:
    ; call default interrupt handler
    ; for keyboard service
-   jmp (DefaultInterruptHandler)
+   jmp (Default_isr)
 
 
 
@@ -141,31 +144,28 @@ start:
    iny
    bra @loop_msg
 @done_msg:
-   ; print newline
-   lda #$0D ; newline
-   jsr CHROUT
 
    ; Set Oscillator 1 frequency
-   lda #1
+   lda #0
    sta freq1+1
-   lda #128
+   lda #0
    sta freq1
    ; Set Oscillator 2 frequency
-   lda #1
+   lda #0
    sta freq2+1
-   lda #125
+   lda #0
    sta freq2
 
    ; copy address of default interrupt handler
    lda IRQVec
-   sta DefaultInterruptHandler
+   sta Default_isr
    lda IRQVec+1
-   sta DefaultInterruptHandler+1
+   sta Default_isr+1
    ; replace irq handler
    sei            ; block interrupts
-   lda #<MyInterruptHandler
+   lda #<My_isr
    sta IRQVec
-   lda #>MyInterruptHandler
+   lda #>My_isr
    sta IRQVec+1
    cli            ; allow interrupts
 
@@ -176,11 +176,11 @@ start:
    lda #0         ; set playback rate to zero
    sta VERA_audio_rate
    tax            ; initial audio sample
+
    ; fill buffer once
    lda #0
    tax
 @loop:
-   inx
    stx VERA_audio_data     ; and append it to the buffer
    lda VERA_audio_ctrl     ; check if buffer is full
    and #$80
@@ -197,42 +197,86 @@ start:
    ora #$08
    sta VERA_ien
 
-   ; main loop ... wait until "Q" is pressed. Playback is maintained by interrupts.
+   ; main loop ... wait until "Q" is pressed. Playback is maintained by ISR.
 mainloop:
    jsr GETIN      ; get charakter from keyboard
    cmp #65        ; check if pressed "A"
-   beq @keyboard_a
+   bne @skip_a
+   jmp @keyboard_a
+@skip_a:
    cmp #87        ; check if pressed "W"
-   beq @keyboard_w
+   bne @skip_w
+   jmp @keyboard_w
+@skip_w:
    cmp #83        ; check if pressed "S"
-   beq @keyboard_s
+   bne @skip_s
+   jmp @keyboard_s
+@skip_s:
    cmp #69        ; check if pressed "E"
-   beq @keyboard_e
+   bne @skip_e
+   jmp @keyboard_e
+@skip_e:
    cmp #68        ; check if pressed "D"
-   beq @keyboard_d
+   bne @skip_d
+   jmp @keyboard_d
+@skip_d:
    cmp #70        ; check if pressed "F"
-   beq @keyboard_f
+   bne @skip_f
+   jmp @keyboard_f
+@skip_f:
    cmp #84        ; check if pressed "T"
-   beq @keyboard_t
+   bne @skip_t
+   jmp @keyboard_t
+@skip_t:
    cmp #71        ; check if pressed "G"
-   beq @keyboard_g
+   bne @skip_g
+   jmp @keyboard_g
+@skip_g:
    cmp #89        ; check if pressed "Y"
-   beq @keyboard_z
+   bne @skip_y
+   jmp @keyboard_y
+@skip_y:
    cmp #72        ; check if pressed "H"
-   beq @keyboard_h
+   bne @skip_h
+   jmp @keyboard_h
+@skip_h:
    cmp #85        ; check if pressed "U"
-   beq @keyboard_u
+   bne @skip_u
+   jmp @keyboard_u
+@skip_u:
    cmp #74        ; check if pressed "J"
-   beq @keyboard_j
+   bne @skip_j
+   jmp @keyboard_j
+@skip_j:
    cmp #75        ; check if pressed "K"
-   beq @keyboard_k
+   bne @skip_k
+   jmp @keyboard_k
+@skip_k:
    cmp #79        ; check if pressed "O"
-   beq @keyboard_o
+   bne @skip_o
+   jmp @keyboard_o
+@skip_o:
    cmp #76        ; check if pressed "L"
-   beq @keyboard_l
+   bne @skip_l
+   jmp @keyboard_l
+@skip_l:
+   cmp #32        ; check if pressed "SPACE"
+   bne @skip_space
+   jmp @keyboard_off
+@skip_space:
+   cmp #90        ; check if pressed "Z"
+   bne @skip_z
+   jmp @keyboard_z
+@skip_z:
+   cmp #88        ; check if pressed "X"
+   bne @skip_x
+   jmp @keyboard_x
+@skip_x:
    cmp #81        ; exit if pressing "Q"
-   beq done
-   jmp @continue1
+   bne @end_keychecks
+   jmp done
+@end_keychecks:
+   jmp @end_mainloop
 
 @keyboard_a:
    lda #0
@@ -258,7 +302,7 @@ mainloop:
 @keyboard_g:
    lda #7
    jmp @play_note
-@keyboard_z:
+@keyboard_y:
    lda #8
    jmp @play_note
 @keyboard_h:
@@ -279,11 +323,52 @@ mainloop:
 @keyboard_l:
    lda #14
    jmp @play_note
+@keyboard_off:
+   lda #0
+   sta freq1
+   sta freq1+1
+   sta freq2
+   sta freq2+1
+   jmp @end_mainloop
+@keyboard_z:
+   lda Octave
+   beq @end_mainloop
+   sec
+   sbc #12
+   sta Octave
+   jmp @end_mainloop
+@keyboard_x:
+   lda Octave
+   cmp #108
+   beq @end_mainloop
+   clc
+   adc #12
+   sta Octave
+   jmp @end_mainloop
 
 @play_note:
+   ; determine MIDI note
+   sta Note
+   lda Octave
+   clc
+   adc Note
+   adc #OFFSET
+   ; multiply by 2 to get memory address of frequency data
+   asl
+   tax
+
+   ; acquire frequency (and set osc 2 detuning)
+   lda pitch_data,x
+   sta freq1
+   clc
+   adc #DETUNING
+   sta freq2
+   inx
+   lda pitch_data,x
    sta freq1+1
+   adc #0   ; add carry flag from earlier
    sta freq2+1
-@continue1:
+@end_mainloop:
    ;lda LastSample
    ;jsr CHROUT
 
@@ -297,9 +382,9 @@ done:
 
    ; restore interrupt handler
    sei            ; block interrupts
-   lda #<DefaultInterruptHandler
+   lda #<Default_isr
    sta IRQVec
-   lda #>DefaultInterruptHandler
+   lda #>Default_isr
    sta IRQVec+1
    cli            ; allow interrupts
 
@@ -313,6 +398,9 @@ done:
    sta VERA_ien
 
    rts            ; return to BASIC
-
+   ; NOTE
+   ; The program gets corrupted in memory after returning to BASIC
+   ; If running again, reLOAD the program!
 
 .include "sine_8_8.inc"
+.include "pitch_data.inc"
