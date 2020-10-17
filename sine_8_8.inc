@@ -2,258 +2,258 @@
 
 full_sine_8_8:
     .byte 0
-    .byte 3
-    .byte 6
-    .byte 9
-    .byte 12
+    .byte 2
+    .byte 5
+    .byte 7
+    .byte 10
+    .byte 13
     .byte 15
     .byte 18
     .byte 21
-    .byte 24
-    .byte 27
-    .byte 30
-    .byte 34
-    .byte 37
+    .byte 23
+    .byte 26
+    .byte 28
+    .byte 31
+    .byte 33
+    .byte 36
     .byte 39
-    .byte 42
-    .byte 45
+    .byte 41
+    .byte 43
+    .byte 46
     .byte 48
     .byte 51
-    .byte 54
+    .byte 53
+    .byte 55
     .byte 57
     .byte 60
     .byte 62
-    .byte 65
+    .byte 64
+    .byte 66
     .byte 68
     .byte 70
-    .byte 73
-    .byte 75
+    .byte 72
+    .byte 74
+    .byte 76
     .byte 78
     .byte 80
+    .byte 82
     .byte 83
     .byte 85
     .byte 87
+    .byte 88
     .byte 90
+    .byte 91
     .byte 92
     .byte 94
+    .byte 95
     .byte 96
-    .byte 98
+    .byte 97
+    .byte 99
     .byte 100
+    .byte 101
     .byte 102
+    .byte 102
+    .byte 103
     .byte 104
+    .byte 105
+    .byte 105
+    .byte 106
     .byte 106
     .byte 107
-    .byte 109
-    .byte 110
-    .byte 112
-    .byte 113
-    .byte 115
-    .byte 116
-    .byte 117
-    .byte 118
-    .byte 120
-    .byte 121
-    .byte 122
-    .byte 122
-    .byte 123
-    .byte 124
-    .byte 125
-    .byte 125
-    .byte 126
-    .byte 126
-    .byte 126
-    .byte 127
-    .byte 127
-    .byte 127
-    .byte 127
-    .byte 127
-    .byte 127
-    .byte 127
-    .byte 126
-    .byte 126
-    .byte 126
-    .byte 125
-    .byte 125
-    .byte 124
-    .byte 123
-    .byte 122
-    .byte 122
-    .byte 121
-    .byte 120
-    .byte 118
-    .byte 117
-    .byte 116
-    .byte 115
-    .byte 113
-    .byte 112
-    .byte 110
-    .byte 109
+    .byte 107
+    .byte 107
+    .byte 108
+    .byte 108
+    .byte 108
+    .byte 108
+    .byte 108
+    .byte 108
+    .byte 108
+    .byte 107
+    .byte 107
     .byte 107
     .byte 106
+    .byte 106
+    .byte 105
+    .byte 105
     .byte 104
+    .byte 103
     .byte 102
+    .byte 102
+    .byte 101
     .byte 100
-    .byte 98
+    .byte 99
+    .byte 97
     .byte 96
+    .byte 95
     .byte 94
     .byte 92
+    .byte 91
     .byte 90
+    .byte 88
     .byte 87
     .byte 85
     .byte 83
+    .byte 82
     .byte 80
     .byte 78
-    .byte 75
-    .byte 73
+    .byte 76
+    .byte 74
+    .byte 72
     .byte 70
     .byte 68
-    .byte 65
+    .byte 66
+    .byte 64
     .byte 62
     .byte 60
     .byte 57
-    .byte 54
+    .byte 55
+    .byte 53
     .byte 51
     .byte 48
-    .byte 45
-    .byte 42
+    .byte 46
+    .byte 43
+    .byte 41
     .byte 39
-    .byte 37
-    .byte 34
-    .byte 30
-    .byte 27
-    .byte 24
+    .byte 36
+    .byte 33
+    .byte 31
+    .byte 28
+    .byte 26
+    .byte 23
     .byte 21
     .byte 18
     .byte 15
-    .byte 12
-    .byte 9
-    .byte 6
-    .byte 3
+    .byte 13
+    .byte 10
+    .byte 7
+    .byte 5
+    .byte 2
     .byte 0
-    .byte 252
-    .byte 249
-    .byte 246
-    .byte 243
+    .byte 253
+    .byte 250
+    .byte 248
+    .byte 245
+    .byte 242
     .byte 240
     .byte 237
     .byte 234
-    .byte 231
-    .byte 228
-    .byte 225
-    .byte 221
-    .byte 218
+    .byte 232
+    .byte 229
+    .byte 227
+    .byte 224
+    .byte 222
+    .byte 219
     .byte 216
-    .byte 213
-    .byte 210
+    .byte 214
+    .byte 212
+    .byte 209
     .byte 207
     .byte 204
-    .byte 201
+    .byte 202
+    .byte 200
     .byte 198
     .byte 195
     .byte 193
-    .byte 190
+    .byte 191
+    .byte 189
     .byte 187
     .byte 185
-    .byte 182
-    .byte 180
+    .byte 183
+    .byte 181
+    .byte 179
     .byte 177
     .byte 175
+    .byte 173
     .byte 172
     .byte 170
     .byte 168
+    .byte 167
     .byte 165
+    .byte 164
     .byte 163
     .byte 161
+    .byte 160
     .byte 159
-    .byte 157
+    .byte 158
+    .byte 156
     .byte 155
+    .byte 154
     .byte 153
+    .byte 153
+    .byte 152
     .byte 151
+    .byte 150
+    .byte 150
+    .byte 149
     .byte 149
     .byte 148
-    .byte 146
-    .byte 145
-    .byte 143
-    .byte 142
-    .byte 140
-    .byte 139
-    .byte 138
-    .byte 137
-    .byte 135
-    .byte 134
-    .byte 133
-    .byte 133
-    .byte 132
-    .byte 131
-    .byte 130
-    .byte 130
-    .byte 129
-    .byte 129
-    .byte 129
-    .byte 128
-    .byte 128
-    .byte 128
-    .byte 128
-    .byte 128
-    .byte 128
-    .byte 128
-    .byte 129
-    .byte 129
-    .byte 129
-    .byte 130
-    .byte 130
-    .byte 131
-    .byte 132
-    .byte 133
-    .byte 133
-    .byte 134
-    .byte 135
-    .byte 137
-    .byte 138
-    .byte 139
-    .byte 140
-    .byte 142
-    .byte 143
-    .byte 145
-    .byte 146
+    .byte 148
+    .byte 148
+    .byte 147
+    .byte 147
+    .byte 147
+    .byte 147
+    .byte 147
+    .byte 147
+    .byte 147
+    .byte 148
+    .byte 148
     .byte 148
     .byte 149
+    .byte 149
+    .byte 150
+    .byte 150
     .byte 151
+    .byte 152
     .byte 153
+    .byte 153
+    .byte 154
     .byte 155
-    .byte 157
+    .byte 156
+    .byte 158
     .byte 159
+    .byte 160
     .byte 161
     .byte 163
+    .byte 164
     .byte 165
+    .byte 167
     .byte 168
     .byte 170
     .byte 172
+    .byte 173
     .byte 175
     .byte 177
-    .byte 180
-    .byte 182
+    .byte 179
+    .byte 181
+    .byte 183
     .byte 185
     .byte 187
-    .byte 190
+    .byte 189
+    .byte 191
     .byte 193
     .byte 195
     .byte 198
-    .byte 201
+    .byte 200
+    .byte 202
     .byte 204
     .byte 207
-    .byte 210
-    .byte 213
+    .byte 209
+    .byte 212
+    .byte 214
     .byte 216
-    .byte 218
-    .byte 221
-    .byte 225
-    .byte 228
-    .byte 231
+    .byte 219
+    .byte 222
+    .byte 224
+    .byte 227
+    .byte 229
+    .byte 232
     .byte 234
     .byte 237
     .byte 240
-    .byte 243
-    .byte 246
-    .byte 249
-    .byte 252
+    .byte 242
+    .byte 245
+    .byte 248
+    .byte 250
+    .byte 253

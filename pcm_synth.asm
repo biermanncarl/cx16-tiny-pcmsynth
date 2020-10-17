@@ -19,6 +19,10 @@ freq2:
    .word 0
 phase2:
    .word 0
+freq3:
+   .word 0
+phase3:
+   .word 0
 
 
 .org $080D
@@ -52,10 +56,12 @@ OFFSET = 0
 
    ; oscillator 2 detuning
 DETUNING = 4
+   ; oscillator 3 pitch offset
+OSC3_OFFSET = 12  
 
-   ; delay memory locations
+   ; delay memory locations (only MSB are read. assumes whole pages are available)
 DLY_BUFFER_START = $0E00
-DLY_BUFFER_END   = $8DFF   ; that's 32 kB ... yessss! :-D
+DLY_BUFFER_END   = $4DFF   ; that's 16 kB ... yessss! :-D
 
 
    ; handles the sound generation
@@ -125,6 +131,36 @@ My_isr:
    sta phase2+1
    ; Oscillator 2: roughly 44 cycles
 
+   ; Oscillator 3 (1/8 volume)
+   ldx phase3+1
+   lda full_sine_8_8, x
+   bmi @osc3_minus
+   lsr
+   lsr
+   lsr
+   jmp @osc3_continue
+@osc3_minus:
+   sec
+   ror
+   sec
+   ror
+   sec
+   ror
+@osc3_continue:
+   clc
+   adc csample
+   sta csample
+   ; advance phase
+   ; LSB first, then MSB
+   lda freq3
+   clc
+   adc phase3
+   sta phase3
+   lda freq3+1
+   adc phase3+1
+   sta phase3+1
+   ; Oscillator 3: roughly 48 cycles
+
    ; delay effect
    ; first, read sample and mix it with current signal
    ; then feed it back into the buffer
@@ -188,12 +224,14 @@ start:
    bra @loop_msg
 @done_msg:
 
-   ; Mute Oscillators 1 and 2
+   ; Mute Oscillators 1, 2 and 3
    lda #0
    sta freq1+1
    sta freq1
    sta freq2+1
    sta freq2
+   sta freq3+1
+   sta freq3
 
    ; Initialize delay
    lda #<DLY_BUFFER_START
@@ -232,7 +270,7 @@ start:
    beq @loop
 
    ; start playback
-   lda #128
+   lda #64
    sta VERA_audio_rate
 
    ; enable AFLOW interrupt
@@ -374,6 +412,9 @@ mainloop:
    sta freq1+1
    sta freq2
    sta freq2+1
+   sta freq3
+   sta freq3+1
+   ; TODO: reset phase?
    jmp @end_mainloop
 @keyboard_z:
    lda Octave
@@ -402,7 +443,7 @@ mainloop:
    asl
    tax
 
-   ; acquire frequency (and set osc 2 detuning)
+   ; set oscillator 1 and 2 frequencies (inclusive osc 2 detuning)
    lda pitch_data,x
    sta freq1
    clc
@@ -413,6 +454,16 @@ mainloop:
    sta freq1+1
    adc #0   ; add carry flag from earlier
    sta freq2+1
+   ; set oscillator 3 frequencies
+   txa
+   clc
+   adc #(OSC3_OFFSET*2-1)
+   tax
+   lda pitch_data,x
+   sta freq3
+   inx
+   lda pitch_data,x
+   sta freq3+1
 @end_mainloop:
    ;lda LastSample
    ;jsr CHROUT
