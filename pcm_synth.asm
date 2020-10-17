@@ -33,7 +33,7 @@ DefaultInterruptHandler:
    .word $0000
 
 message:
-   .byte "press q to quit"
+   .byte "use keyboard (a,w,s,...) to play, press q to quit"
 end_message:
 
 
@@ -200,12 +200,89 @@ start:
    ; main loop ... wait until "Q" is pressed. Playback is maintained by interrupts.
 mainloop:
    jsr GETIN      ; get charakter from keyboard
+   cmp #65        ; check if pressed "A"
+   beq @keyboard_a
+   cmp #87        ; check if pressed "W"
+   beq @keyboard_w
+   cmp #83        ; check if pressed "S"
+   beq @keyboard_s
+   cmp #69        ; check if pressed "E"
+   beq @keyboard_e
+   cmp #68        ; check if pressed "D"
+   beq @keyboard_d
+   cmp #70        ; check if pressed "F"
+   beq @keyboard_f
+   cmp #84        ; check if pressed "T"
+   beq @keyboard_t
+   cmp #71        ; check if pressed "G"
+   beq @keyboard_g
+   cmp #89        ; check if pressed "Y"
+   beq @keyboard_z
+   cmp #72        ; check if pressed "H"
+   beq @keyboard_h
+   cmp #85        ; check if pressed "U"
+   beq @keyboard_u
+   cmp #74        ; check if pressed "J"
+   beq @keyboard_j
+   cmp #75        ; check if pressed "K"
+   beq @keyboard_k
+   cmp #79        ; check if pressed "O"
+   beq @keyboard_o
+   cmp #76        ; check if pressed "L"
+   beq @keyboard_l
    cmp #81        ; exit if pressing "Q"
    beq done
-   ; cmp #65        ; check if pressed "A": decrease Volume
-   ; bne @continue1
+   jmp @continue1
 
+@keyboard_a:
+   lda #0
+   jmp @play_note
+@keyboard_w:
+   lda #1
+   jmp @play_note
+@keyboard_s:
+   lda #2
+   jmp @play_note
+@keyboard_e:
+   lda #3
+   jmp @play_note
+@keyboard_d:
+   lda #4
+   jmp @play_note
+@keyboard_f:
+   lda #5
+   jmp @play_note
+@keyboard_t:
+   lda #6
+   jmp @play_note
+@keyboard_g:
+   lda #7
+   jmp @play_note
+@keyboard_z:
+   lda #8
+   jmp @play_note
+@keyboard_h:
+   lda #9
+   jmp @play_note
+@keyboard_u:
+   lda #10
+   jmp @play_note
+@keyboard_j:
+   lda #11
+   jmp @play_note
+@keyboard_k:
+   lda #12
+   jmp @play_note
+@keyboard_o:
+   lda #13
+   jmp @play_note
+@keyboard_l:
+   lda #14
+   jmp @play_note
 
+@play_note:
+   sta freq1+1
+   sta freq2+1
 @continue1:
    ;lda LastSample
    ;jsr CHROUT
